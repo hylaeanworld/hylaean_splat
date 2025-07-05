@@ -42,8 +42,8 @@ Hylaean Splat is a unified interface and management system for various 3D Gaussi
 
 ### Build from Source
 ```bash
-git clone https://github.com/kyjohnso/hylaean_splat.git
-cd hylaean_splat
+git clone https://github.com/kyjohnso/hylaeansplat_splat.git
+cd hylaeansplat_splat
 cargo build --release
 ```
 
@@ -56,27 +56,27 @@ cargo install --path .
 
 ### 1. Initialize Hylaean Splat
 ```bash
-hylaean init
+hylaeansplat init
 ```
 
 ### 2. Discover Installed Tools
 ```bash
-hylaean tool discover
+hylaeansplat tool discover
 ```
 
 ### 3. List Available Tools
 ```bash
-hylaean list --detailed
+hylaeansplat list --detailed
 ```
 
 ### 4. Convert Point Cloud Formats
 ```bash
-hylaean convert --input data.ply --output data.xyz --output-format xyz
+hylaeansplat convert --input data.ply --output data.xyz --output-format xyz
 ```
 
 ### 5. Start the Agentic Monitor
 ```bash
-hylaean agent start
+hylaeansplat agent start
 ```
 
 ## Usage
@@ -86,28 +86,28 @@ hylaean agent start
 #### Discover Tools
 ```bash
 # Auto-discover tools in common locations
-hylaean tool discover
+hylaeansplat tool discover
 
 # Search specific directory
-hylaean tool discover --path /path/to/tools
+hylaeansplat tool discover --path /path/to/tools
 ```
 
 #### Install Tools
 ```bash
 # Install from known repository
-hylaean tool install gaussian_splatting
+hylaeansplat tool install gaussian_splatting
 
 # Install to specific location
-hylaean tool install brush_app --path ./my_tools
+hylaeansplat tool install brush_app --path ./my_tools
 ```
 
 #### Run Tools
 ```bash
 # Train with 3D Gaussian Splatting
-hylaean tool run gaussian_splatting train /path/to/data /path/to/output
+hylaeansplat tool run gaussian_splatting train /path/to/data /path/to/output
 
 # Render with Brush
-hylaean tool run brush_app render /path/to/model /path/to/output
+hylaeansplat tool run brush_app render /path/to/model /path/to/output
 ```
 
 ### Format Conversion
@@ -115,19 +115,19 @@ hylaean tool run brush_app render /path/to/model /path/to/output
 #### Point Cloud Conversion
 ```bash
 # PLY to XYZ
-hylaean convert -i model.ply -o points.xyz --output-format xyz
+hylaeansplat convert -i model.ply -o points.xyz --output-format xyz
 
 # PCD to PLY
-hylaean convert -i cloud.pcd -o cloud.ply --output-format ply
+hylaeansplat convert -i cloud.pcd -o cloud.ply --output-format ply
 ```
 
 #### Camera Parameter Conversion
 ```bash
 # COLMAP to NeRF
-hylaean convert -i colmap_sparse -o transforms.json --output-format nerf
+hylaeansplat convert -i colmap_sparse -o transforms.json --output-format nerf
 
 # NeRF to COLMAP
-hylaean convert -i transforms.json -o colmap_out --output-format colmap
+hylaeansplat convert -i transforms.json -o colmap_out --output-format colmap
 ```
 
 ### Agentic Features
@@ -135,25 +135,25 @@ hylaean convert -i transforms.json -o colmap_out --output-format colmap
 #### Start Monitoring
 ```bash
 # Start in foreground
-hylaean agent start
+hylaeansplat agent start
 
 # Start as daemon
-hylaean agent start --daemon
+hylaeansplat agent start --daemon
 ```
 
 #### Get Recommendations
 ```bash
 # General recommendations
-hylaean agent recommend
+hylaeansplat agent recommend
 
 # Specific use case
-hylaean agent recommend --use-case "dynamic scenes"
+hylaeansplat agent recommend --use-case "dynamic scenes"
 ```
 
 #### Generate Installation Scripts
 ```bash
 # Generate script for a tool
-hylaean agent generate brush_app --output install_brush.sh
+hylaeansplat agent generate brush_app --output install_brush.sh
 ```
 
 ### Workflows
@@ -161,27 +161,27 @@ hylaean agent generate brush_app --output install_brush.sh
 #### Complete COLMAP Pipeline
 ```bash
 # Run full COLMAP pipeline
-hylaean tool run colmap full_pipeline /path/to/images /path/to/output
+hylaeansplat tool run colmap full_pipeline /path/to/images /path/to/output
 ```
 
 #### 3DGS Training Pipeline
 ```bash
 # 1. Preprocess with COLMAP
-hylaean tool run colmap full_pipeline ./images ./colmap_output
+hylaeansplat tool run colmap full_pipeline ./images ./colmap_output
 
 # 2. Train with 3D Gaussian Splatting
-hylaean tool run gaussian_splatting train ./colmap_output ./gs_output
+hylaeansplat tool run gaussian_splatting train ./colmap_output ./gs_output
 
 # 3. Render results
-hylaean tool run gaussian_splatting render ./gs_output ./renders
+hylaeansplat tool run gaussian_splatting render ./gs_output ./renders
 ```
 
 ## Configuration
 
-Hylaean Splat stores configuration in `~/.hylaean_splat/`:
+Hylaean Splat stores configuration in `~/.hylaeansplat_splat/`:
 
 ```
-~/.hylaean_splat/
+~/.hylaeansplat_splat/
 ├── config.toml          # Main configuration
 ├── database/            # Tool registry and metadata
 ├── tools/              # Installed tools
@@ -190,7 +190,7 @@ Hylaean Splat stores configuration in `~/.hylaean_splat/`:
 
 ### Configuration Options
 
-Edit `~/.hylaean_splat/config.toml`:
+Edit `~/.hylaeansplat_splat/config.toml`:
 
 ```toml
 [agent_config]

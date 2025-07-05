@@ -4,7 +4,7 @@ use hylaean_splat::core::HylaeanSplat;
 use log::info;
 
 #[derive(Parser)]
-#[command(name = "hylaean")]
+#[command(name = "hylaeansplat")]
 #[command(about = "Operating system for 3D Gaussian splatting tools")]
 #[command(version)]
 pub struct Cli {
@@ -29,10 +29,10 @@ async fn main() -> anyhow::Result<()> {
     info!("Starting Hylaean Splat...");
     
     // Initialize the core system
-    let mut hylaean = HylaeanSplat::new().await?;
+    let mut hylaeansplat = HylaeanSplat::new().await?;
     
     // Execute the command
-    hylaean.execute_command(cli.command).await?;
+    hylaeansplat.execute_command(cli.command).await?;
     
     Ok(())
 }

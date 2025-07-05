@@ -81,7 +81,7 @@ graph TD
 ## Immediate Next Steps
 
 ### 1. Fix CLI Integration
-**Problem**: Currently, the CLI command `hylaean tool run colmap full_pipeline` doesn't actually execute your COLMAP integration.
+**Problem**: Currently, the CLI command `hylaeansplat tool run colmap full_pipeline` doesn't actually execute your COLMAP integration.
 
 **Solution**: Connect the tool manager to your existing integrations:
 
@@ -108,16 +108,16 @@ pub async fn run_tool(&mut self, name: String, args: Vec<String>) -> Result<()> 
 **Test Command Sequence**:
 ```bash
 # Initialize
-./target/release/hylaean init
+./target/release/hylaeansplat init
 
 # Install tools locally
-./target/release/hylaean tool install colmap --path ./tools
-./target/release/hylaean tool install brush_app --path ./tools
+./target/release/hylaeansplat tool install colmap --path ./tools
+./target/release/hylaeansplat tool install brush_app --path ./tools
 
 # Run pipeline with test images
-./target/release/hylaean tool run colmap full_pipeline ./test_images ./output/colmap
-./target/release/hylaean tool run brush_app train ./output/colmap ./output/brush_model
-./target/release/hylaean tool run brush_app render ./output/brush_model ./output/renders
+./target/release/hylaeansplat tool run colmap full_pipeline ./test_images ./output/colmap
+./target/release/hylaeansplat tool run brush_app train ./output/colmap ./output/brush_model
+./target/release/hylaeansplat tool run brush_app render ./output/brush_model ./output/renders
 ```
 
 ### 3. Test with Real Images
@@ -236,6 +236,6 @@ python3 testing/validation/generate_report.py
 3. **Build Simple Test**: Get basic pipeline working with test images
 4. **Validate Results**: Confirm reconstruction quality
 
-This will enable you to test your COLMAP and Brush integrations with a folder of images using the `hylaean` CLI tool as intended.
+This will enable you to test your COLMAP and Brush integrations with a folder of images using the `hylaeansplat` CLI tool as intended.
 
 The comprehensive framework we've designed will ensure robust, automated testing across multiple scenarios while providing detailed quality metrics and performance benchmarks.

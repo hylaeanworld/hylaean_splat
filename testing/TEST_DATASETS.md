@@ -275,7 +275,7 @@ def validate_ground_truth(gt_path, reconstruction_path):
 #!/bin/bash
 # Download and setup test datasets
 
-DATASETS_URL="https://datasets.hylaean.com"
+DATASETS_URL="https://datasets.hylaeansplat.com"
 TARGET_DIR="testing/datasets"
 
 # Create directories

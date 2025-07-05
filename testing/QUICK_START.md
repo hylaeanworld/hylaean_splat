@@ -37,24 +37,24 @@ Your CLI now supports these commands:
 ### COLMAP Commands
 ```bash
 # Full COLMAP pipeline (feature extraction → matching → reconstruction)
-./target/release/hylaean tool run colmap full_pipeline ./images ./output/colmap
+./target/release/hylaeansplat tool run colmap full_pipeline ./images ./output/colmap
 
 # Individual COLMAP steps
-./target/release/hylaean tool run colmap feature_extractor ./database.db ./images
-./target/release/hylaean tool run colmap exhaustive_matcher ./database.db
-./target/release/hylaean tool run colmap mapper ./database.db ./images ./output
+./target/release/hylaeansplat tool run colmap feature_extractor ./database.db ./images
+./target/release/hylaeansplat tool run colmap exhaustive_matcher ./database.db
+./target/release/hylaeansplat tool run colmap mapper ./database.db ./images ./output
 ```
 
 ### Brush Commands
 ```bash
 # Train Gaussian Splat model
-./target/release/hylaean tool run brush_app train ./colmap_output ./model_output
+./target/release/hylaeansplat tool run brush_app train ./colmap_output ./model_output
 
 # Render novel views
-./target/release/hylaean tool run brush_app render ./model_output ./renders
+./target/release/hylaeansplat tool run brush_app render ./model_output ./renders
 
 # Launch interactive viewer
-./target/release/hylaean tool run brush_app viewer ./model_output
+./target/release/hylaeansplat tool run brush_app viewer ./model_output
 ```
 
 ## Prerequisites
@@ -66,7 +66,7 @@ Your CLI now supports these commands:
 
 ### For Brush
 - **Rust**: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-- **Install Brush**: `./target/release/hylaean tool install brush_app --path ./tools`
+- **Install Brush**: `./target/release/hylaeansplat tool install brush_app --path ./tools`
 
 ## Test Image Requirements
 
@@ -122,7 +122,7 @@ testing/outputs/simple_test/
 - Ensure overlap: Each image should share content with others
 
 ### Brush fails
-- Install Brush: `./target/release/hylaean tool install brush_app --path ./tools`
+- Install Brush: `./target/release/hylaeansplat tool install brush_app --path ./tools`
 - Check GPU support: Brush works better with CUDA/GPU acceleration
 
 ## What's Working Now

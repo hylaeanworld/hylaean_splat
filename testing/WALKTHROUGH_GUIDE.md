@@ -15,15 +15,15 @@ cargo build --release
 ### 2. Current CLI Status
 ```bash
 # Test basic CLI functionality
-./target/release/hylaean --help
-./target/release/hylaean init --force
-./target/release/hylaean list
+./target/release/hylaeansplat --help
+./target/release/hylaeansplat init --force
+./target/release/hylaeansplat list
 ```
 
 ### 3. Integration Status
 ```bash
 # Check if tools are discoverable
-./target/release/hylaean tool discover
+./target/release/hylaeansplat tool discover
 ```
 
 ## Step-by-Step Implementation
@@ -134,23 +134,23 @@ mkdir -p testing/datasets/small/images
 **Test Command Sequence**:
 ```bash
 # 1. Initialize Hylaean
-./target/release/hylaean init --force
+./target/release/hylaeansplat init --force
 
 # 2. Discover tools (should find COLMAP if installed)
-./target/release/hylaean tool discover
+./target/release/hylaeansplat tool discover
 
 # 3. Test COLMAP pipeline
-./target/release/hylaean tool run colmap full_pipeline \
+./target/release/hylaeansplat tool run colmap full_pipeline \
     testing/datasets/small/images \
     testing/outputs/small/colmap
 
 # 4. Test Brush training (if COLMAP succeeded)
-./target/release/hylaean tool run brush_app train \
+./target/release/hylaeansplat tool run brush_app train \
     testing/outputs/small/colmap \
     testing/outputs/small/brush_model
 
 # 5. Test rendering
-./target/release/hylaean tool run brush_app render \
+./target/release/hylaeansplat tool run brush_app render \
     testing/outputs/small/brush_model \
     testing/outputs/small/renders
 ```
@@ -185,10 +185,10 @@ mkdir -p testing/datasets/small/images
 ```bash
 # Build and initialize
 cargo build --release
-./target/release/hylaean init --force
+./target/release/hylaeansplat init --force
 
 # Test COLMAP directly
-./target/release/hylaean tool run colmap full_pipeline \
+./target/release/hylaeansplat tool run colmap full_pipeline \
     testing/datasets/small/images \
     testing/outputs/small/colmap
 
@@ -200,7 +200,7 @@ cargo build --release
 ### Step 3: Test Brush Integration
 ```bash
 # Test Brush training
-./target/release/hylaean tool run brush_app train \
+./target/release/hylaeansplat tool run brush_app train \
     testing/outputs/small/colmap \
     testing/outputs/small/brush_model
 
@@ -211,7 +211,7 @@ cargo build --release
 ### Step 4: Test Rendering
 ```bash
 # Test rendering
-./target/release/hylaean tool run brush_app render \
+./target/release/hylaeansplat tool run brush_app render \
     testing/outputs/small/brush_model \
     testing/outputs/small/renders
 

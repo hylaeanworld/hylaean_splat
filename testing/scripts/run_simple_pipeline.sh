@@ -45,13 +45,13 @@ cargo build --release
 
 # Initialize if needed
 echo "Initializing Hylaean Splat..."
-./target/release/hylaean init --force
+./target/release/hylaeansplat init --force
 
 echo "=== Step 1: COLMAP Structure-from-Motion ==="
 echo "Running COLMAP full pipeline..."
 
 # Run COLMAP full pipeline
-if ./target/release/hylaean tool run colmap full_pipeline "$INPUT_DIR" "$OUTPUT_DIR/colmap"; then
+if ./target/release/hylaeansplat tool run colmap full_pipeline "$INPUT_DIR" "$OUTPUT_DIR/colmap"; then
     echo "✓ COLMAP reconstruction completed successfully"
     
     # Check if reconstruction was successful
@@ -92,7 +92,7 @@ if ! command -v brush &> /dev/null; then
         BRUSH_EXEC="./tools/brush/target/release/brush"
     else
         echo "Brush not found. You can install it with:"
-        echo "  ./target/release/hylaean tool install brush_app --path ./tools"
+        echo "  ./target/release/hylaeansplat tool install brush_app --path ./tools"
         echo "Or install manually from: https://github.com/ArthurBrussee/brush"
         echo "Skipping Brush training step..."
         exit 0
@@ -102,13 +102,13 @@ else
 fi
 
 # Try to run Brush training via our CLI
-if ./target/release/hylaean tool run brush_app train "$OUTPUT_DIR/colmap" "$OUTPUT_DIR/brush_model"; then
+if ./target/release/hylaeansplat tool run brush_app train "$OUTPUT_DIR/colmap" "$OUTPUT_DIR/brush_model"; then
     echo "✓ Brush training completed successfully"
     
     echo "=== Step 3: Rendering Test Views ==="
     echo "Rendering novel views..."
     
-    if ./target/release/hylaean tool run brush_app render "$OUTPUT_DIR/brush_model" "$OUTPUT_DIR/renders"; then
+    if ./target/release/hylaeansplat tool run brush_app render "$OUTPUT_DIR/brush_model" "$OUTPUT_DIR/renders"; then
         echo "✓ Rendering completed successfully"
         
         # Count rendered images

@@ -71,5 +71,5 @@ members = [
 ]
 
 [[bin]]
-name = "hylaean"
+name = "hylaeansplat"
 path = "src/main.rs"

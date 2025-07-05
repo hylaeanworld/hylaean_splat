@@ -152,7 +152,7 @@ Complete environment setup including tool installation, test data download, and 
 cargo build --release
 
 # Initialize configuration
-./target/release/hylaean init --force
+./target/release/hylaeansplat init --force
 
 # Create testing directories
 mkdir -p testing/{datasets,outputs,validation}
@@ -167,8 +167,8 @@ mkdir -p testing/{datasets,outputs,validation}
 ./testing/scripts/install_brush.sh
 
 # Verify installations
-./target/release/hylaean tool discover
-./target/release/hylaean list --detailed
+./target/release/hylaeansplat tool discover
+./target/release/hylaeansplat list --detailed
 ```
 
 #### 3. Download Test Datasets
@@ -230,7 +230,7 @@ python3 testing/validation/validate_images.py "$INPUT_DIR"
 mkdir -p "$OUTPUT_DIR/colmap"
 
 # Run COLMAP full pipeline
-./target/release/hylaean tool run colmap full_pipeline \
+./target/release/hylaeansplat tool run colmap full_pipeline \
     "$INPUT_DIR" \
     "$OUTPUT_DIR/colmap"
 
@@ -241,7 +241,7 @@ python3 testing/validation/validate_colmap.py "$OUTPUT_DIR/colmap"
 #### 3. Format Conversion
 ```bash
 # Convert COLMAP sparse reconstruction to Brush format
-./target/release/hylaean convert \
+./target/release/hylaeansplat convert \
     --input "$OUTPUT_DIR/colmap/sparse/0" \
     --output "$OUTPUT_DIR/brush_input" \
     --output-format brush
@@ -250,7 +250,7 @@ python3 testing/validation/validate_colmap.py "$OUTPUT_DIR/colmap"
 #### 4. Brush Training
 ```bash
 # Train Gaussian Splat model
-./target/release/hylaean tool run brush_app train \
+./target/release/hylaeansplat tool run brush_app train \
     "$OUTPUT_DIR/brush_input" \
     "$OUTPUT_DIR/brush_model"
 
@@ -261,7 +261,7 @@ python3 testing/validation/validate_brush.py "$OUTPUT_DIR/brush_model"
 #### 5. Rendering and Validation
 ```bash
 # Render novel views
-./target/release/hylaean tool run brush_app render \
+./target/release/hylaeansplat tool run brush_app render \
     "$OUTPUT_DIR/brush_model" \
     "$OUTPUT_DIR/renders"
 
@@ -317,9 +317,9 @@ Download and prepare test datasets for comprehensive pipeline testing.
 mkdir -p testing/datasets/{small,medium,challenging}
 
 # Download with progress bars
-wget --progress=bar:force "https://datasets.hylaean.com/small.tar.gz"
-wget --progress=bar:force "https://datasets.hylaean.com/medium.tar.gz"
-wget --progress=bar:force "https://datasets.hylaean.com/challenging.tar.gz"
+wget --progress=bar:force "https://datasets.hylaeansplat.com/small.tar.gz"
+wget --progress=bar:force "https://datasets.hylaeansplat.com/medium.tar.gz"
+wget --progress=bar:force "https://datasets.hylaeansplat.com/challenging.tar.gz"
 
 # Extract and organize
 tar -xzf small.tar.gz -C testing/datasets/small/

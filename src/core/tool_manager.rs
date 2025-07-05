@@ -1,5 +1,6 @@
 use crate::errors::{Result, HylaeanError};
 use crate::core::{ToolEntry, ToolCapabilities, InstallationMethod};
+use crate::integrations::{Integration, colmap, brush_app};
 use sled::Db;
 use std::path::PathBuf;
 use std::process::Command;
@@ -9,6 +10,8 @@ use chrono::Utc;
 use uuid::Uuid;
 use walkdir::WalkDir;
 use which::which;
+use url::Url;
+use regex::Regex;
 
 pub struct ToolManager {
     db: Db,
@@ -268,25 +271,70 @@ impl ToolManager {
         Ok(())
     }
     
-    pub async fn install_tool(&mut self, name: String, path: Option<String>) -> Result<()> {
-        info!("Installing tool: {}", name);
+    pub async fn install_tool(&mut self, name_or_url: String, path: Option<String>, force: bool, branch: Option<String>) -> Result<()> {
+        info!("Installing tool: {}", name_or_url);
         
-        let template = self.known_tools.get(&name)
-            .ok_or_else(|| HylaeanError::ToolNotFound { name: name.clone() })?;
-        
-        match template.installation_method {
-            InstallationMethod::GitClone => {
-                self.install_via_git(template, path).await?;
-            }
-            InstallationMethod::Binary => {
-                info!("Binary installation not yet implemented for {}", name);
-            }
-            _ => {
-                warn!("Installation method not supported yet for {}", name);
+        // Check if it's a GitHub URL
+        if self.is_github_url(&name_or_url) {
+            self.install_from_github_url(name_or_url, path, force, branch).await
+        } else {
+            // Try known tools first
+            if let Some(template) = self.known_tools.get(&name_or_url).cloned() {
+                self.install_known_tool(template, path, force, branch).await
+            } else {
+                Err(HylaeanError::ToolNotFound { name: name_or_url })
             }
         }
+    }
+    
+    // Helper method to check if a string is a GitHub URL
+    fn is_github_url(&self, url: &str) -> bool {
+        url.starts_with("https://github.com/") || url.starts_with("http://github.com/") || url.starts_with("git@github.com:")
+    }
+    
+    // Install tool from GitHub URL
+    async fn install_from_github_url(&self, url: String, path: Option<String>, _force: bool, _branch: Option<String>) -> Result<()> {
+        let install_path = if let Some(p) = path {
+            PathBuf::from(p)
+        } else {
+            // Extract repo name from URL for default path
+            let repo_name = url.split('/').last().unwrap_or("unknown").replace(".git", "");
+            PathBuf::from("./tools").join(&repo_name)
+        };
         
+        info!("Cloning {} to {}", url, install_path.display());
+        
+        let output = Command::new("git")
+            .args(&["clone", &url, &install_path.to_string_lossy()])
+            .output()?;
+        
+        if !output.status.success() {
+            return Err(HylaeanError::InstallationFailed {
+                tool: url,
+            });
+        }
+        
+        info!("Successfully installed tool from {}", url);
         Ok(())
+    }
+    
+    // Install known tool using template
+    async fn install_known_tool(&self, template: ToolTemplate, path: Option<String>, _force: bool, _branch: Option<String>) -> Result<()> {
+        match template.installation_method {
+            InstallationMethod::GitClone => {
+                self.install_via_git(&template, path).await
+            }
+            InstallationMethod::Binary => {
+                // For binary tools, we assume they're already installed or need manual installation
+                info!("Binary tool {} should be installed manually", template.name);
+                Ok(())
+            }
+            _ => {
+                Err(HylaeanError::InstallationFailed {
+                    tool: template.name,
+                })
+            }
+        }
     }
     
     async fn install_via_git(&self, template: &ToolTemplate, path: Option<String>) -> Result<()> {
@@ -338,8 +386,64 @@ impl ToolManager {
     
     pub async fn run_tool(&mut self, name: String, args: Vec<String>) -> Result<()> {
         info!("Running tool: {} with args: {:?}", name, args);
-        // TODO: Implement tool execution
-        Ok(())
+        
+        if args.is_empty() {
+            return Err(HylaeanError::ToolExecutionFailed {
+                tool: name.clone(),
+                message: "No command specified".to_string(),
+            });
+        }
+        
+        let command = &args[0];
+        let command_args = &args[1..];
+        
+        match name.as_str() {
+            "colmap" => {
+                let colmap = colmap::Colmap::new();
+                colmap.run_command(command, &command_args.to_vec())
+            }
+            "brush_app" | "brush" => {
+                let brush = brush_app::BrushApp::new();
+                brush.run_command(command, &command_args.to_vec())
+            }
+            _ => {
+                // Try to find the tool in the registry and run it generically
+                self.run_external_tool(name, args).await
+            }
+        }
+    }
+    
+    async fn run_external_tool(&self, name: String, args: Vec<String>) -> Result<()> {
+        // Look up tool in registry
+        let iter = self.db.scan_prefix(b"tool:");
+        for item in iter {
+            let (_, value) = item?;
+            let tool: ToolEntry = serde_json::from_slice(&value)?;
+            
+            if tool.name.to_lowercase() == name.to_lowercase() {
+                // Found the tool, try to execute it
+                let executable = tool.install_path.join(&tool.name);
+                
+                info!("Executing external tool: {} with args: {:?}", executable.display(), args);
+                
+                let output = Command::new(&executable)
+                    .args(&args)
+                    .output()?;
+                
+                if output.status.success() {
+                    info!("Tool {} executed successfully", name);
+                    return Ok(());
+                } else {
+                    let error_msg = String::from_utf8_lossy(&output.stderr);
+                    return Err(HylaeanError::ToolExecutionFailed {
+                        tool: name,
+                        message: error_msg.to_string(),
+                    });
+                }
+            }
+        }
+        
+        Err(HylaeanError::ToolNotFound { name })
     }
     
     pub async fn list_tools(&self, detailed: bool) -> Result<()> {

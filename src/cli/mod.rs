@@ -75,12 +75,20 @@ pub enum ToolAction {
     
     /// Install a tool
     Install {
-        /// Tool name or repository URL
-        name: String,
+        /// Tool name or repository URL (GitHub URLs supported)
+        name_or_url: String,
         
         /// Installation path
         #[arg(short, long)]
         path: Option<String>,
+        
+        /// Force installation even if tool already exists
+        #[arg(short, long)]
+        force: bool,
+        
+        /// Specific branch or tag to install
+        #[arg(short, long)]
+        branch: Option<String>,
     },
     
     /// Remove a tool

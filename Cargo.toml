@@ -59,6 +59,12 @@ path-absolutize = "3.1"
 # Directory utilities
 dirs = "5.0"
 
+# URL parsing
+url = "2.4"
+
+# Regular expressions
+regex = "1.10"
+
 [workspace]
 members = [
     "."

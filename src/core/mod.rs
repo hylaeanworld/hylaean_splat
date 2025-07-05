@@ -94,8 +94,8 @@ impl HylaeanSplat {
         self.tool_manager.discover_tools(path).await
     }
     
-    pub async fn install_tool(&mut self, name: String, path: Option<String>) -> Result<()> {
-        self.tool_manager.install_tool(name, path).await
+    pub async fn install_tool(&mut self, name_or_url: String, path: Option<String>, force: bool, branch: Option<String>) -> Result<()> {
+        self.tool_manager.install_tool(name_or_url, path, force, branch).await
     }
     
     pub async fn remove_tool(&mut self, name: String) -> Result<()> {

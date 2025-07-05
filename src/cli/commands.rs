@@ -50,8 +50,8 @@ impl HylaeanSplat {
                 }
             }
             
-            ToolAction::Install { name, path } => {
-                self.install_tool(name, path).await?;
+            ToolAction::Install { name_or_url, path, force, branch } => {
+                self.install_tool(name_or_url, path, force, branch).await?;
             }
             
             ToolAction::Remove { name } => {

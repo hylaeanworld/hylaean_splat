@@ -5,7 +5,7 @@ use sled::Db;
 use std::path::PathBuf;
 use std::process::Command;
 use std::collections::HashMap;
-use log::{info, warn, error, debug};
+use log::{info, warn};
 use chrono::Utc;
 use uuid::Uuid;
 use walkdir::WalkDir;
@@ -27,6 +27,16 @@ pub struct ToolTemplate {
     pub detection_patterns: Vec<String>,
     pub dependencies: Vec<String>,
     pub install_script: Option<String>,
+    pub binary_names: Vec<String>, // Binary names to check for in PATH
+    pub tool_type: ToolType, // How this tool should be discovered
+}
+
+#[derive(Clone, Debug)]
+pub enum ToolType {
+    StandaloneBinary,  // Tool is a standalone binary (e.g., colmap, brush_app)
+    PythonScript,      // Tool is Python-based (e.g., gaussian_splatting)
+    BlenderAddon,      // Tool is a Blender addon (e.g., skysplat_blender)
+    HostDependent,     // Tool depends on host application but isn't standalone
 }
 
 impl ToolManager {
@@ -66,6 +76,8 @@ impl ToolManager {
             detection_patterns: vec!["train.py".to_string(), "render.py".to_string()],
             dependencies: vec!["python".to_string(), "pytorch".to_string(), "cuda".to_string()],
             install_script: None,
+            binary_names: vec!["python".to_string()], // Look for python to run train.py/render.py
+            tool_type: ToolType::PythonScript,
         });
         
         // SeaSplat
@@ -85,6 +97,8 @@ impl ToolManager {
             detection_patterns: vec!["seasplat_train.py".to_string()],
             dependencies: vec!["python".to_string(), "pytorch".to_string()],
             install_script: None,
+            binary_names: vec!["python".to_string()], // Look for python to run seasplat scripts
+            tool_type: ToolType::PythonScript,
         });
         
         // SkySplat Blender
@@ -104,6 +118,8 @@ impl ToolManager {
             detection_patterns: vec!["skysplat_addon.py".to_string()],
             dependencies: vec!["blender".to_string()],
             install_script: None,
+            binary_names: vec!["blender".to_string()], // Dependency check only
+            tool_type: ToolType::BlenderAddon, // This is an addon, not a standalone tool
         });
         
         // Dynamic 3DGS
@@ -123,6 +139,8 @@ impl ToolManager {
             detection_patterns: vec!["train_dynamic.py".to_string()],
             dependencies: vec!["python".to_string(), "pytorch".to_string()],
             install_script: None,
+            binary_names: vec!["python".to_string()], // Look for python to run dynamic scripts
+            tool_type: ToolType::PythonScript,
         });
         
         // 4DGaussians
@@ -142,6 +160,8 @@ impl ToolManager {
             detection_patterns: vec!["train_4d.py".to_string(), "train.py".to_string()],
             dependencies: vec!["python".to_string(), "pytorch".to_string()],
             install_script: None,
+            binary_names: vec!["python".to_string()], // Look for python to run 4D scripts
+            tool_type: ToolType::PythonScript,
         });
         
         // Brush App
@@ -161,6 +181,8 @@ impl ToolManager {
             detection_patterns: vec!["Cargo.toml".to_string()],
             dependencies: vec!["rust".to_string()],
             install_script: None,
+            binary_names: vec!["brush_app".to_string(), "brush".to_string()], // Look for brush binary
+            tool_type: ToolType::StandaloneBinary,
         });
         
         // COLMAP
@@ -180,6 +202,8 @@ impl ToolManager {
             detection_patterns: vec!["colmap".to_string()],
             dependencies: vec![],
             install_script: None,
+            binary_names: vec!["colmap".to_string()], // Look for colmap binary
+            tool_type: ToolType::StandaloneBinary,
         });
     }
     
@@ -187,23 +211,42 @@ impl ToolManager {
         info!("Discovering tools...");
         let mut discovered_tools = Vec::new();
         
-        // Check for binary tools in PATH
-        for (tool_id, template) in &self.known_tools {
-            if let Some(tool_path) = self.find_tool_in_path(&template.name) {
-                let tool_entry = ToolEntry {
-                    id: Uuid::new_v4().to_string(),
-                    name: template.name.clone(),
-                    version: "unknown".to_string(),
-                    install_path: tool_path,
-                    repository_url: template.repository_url.clone(),
-                    supported_formats: template.capabilities.input_formats.clone(),
-                    dependencies: template.dependencies.clone(),
-                    last_updated: Utc::now(),
-                    capabilities: template.capabilities.clone(),
-                    installation_method: template.installation_method.clone(),
-                };
-                
-                discovered_tools.push(tool_entry);
+        // Check for binary tools in PATH (only for standalone binaries)
+        for (_tool_id, template) in &self.known_tools {
+            match template.tool_type {
+                ToolType::StandaloneBinary => {
+                    if let Some(tool_path) = self.find_tool_in_path(&template.binary_names) {
+                        info!("Found {} (standalone binary) in PATH at: {}", template.name, tool_path.display());
+                        let tool_entry = ToolEntry {
+                            id: Uuid::new_v4().to_string(),
+                            name: template.name.clone(),
+                            version: "unknown".to_string(),
+                            install_path: tool_path,
+                            repository_url: template.repository_url.clone(),
+                            supported_formats: template.capabilities.input_formats.clone(),
+                            dependencies: template.dependencies.clone(),
+                            last_updated: Utc::now(),
+                            capabilities: template.capabilities.clone(),
+                            installation_method: template.installation_method.clone(),
+                        };
+                        
+                        discovered_tools.push(tool_entry);
+                    }
+                },
+                ToolType::PythonScript => {
+                    // For Python scripts, we only check dependencies for now
+                    // The actual discovery happens through filesystem scanning
+                    info!("Skipping {} (Python script) - requires filesystem discovery", template.name);
+                },
+                ToolType::BlenderAddon => {
+                    // For Blender addons, we only discover through filesystem scanning
+                    // Don't register just because Blender is installed
+                    info!("Skipping {} (Blender addon) - requires filesystem discovery", template.name);
+                },
+                ToolType::HostDependent => {
+                    // For host-dependent tools, we need special logic
+                    info!("Skipping {} (host-dependent) - requires filesystem discovery", template.name);
+                },
             }
         }
         
@@ -221,8 +264,17 @@ impl ToolManager {
         Ok(discovered_tools)
     }
     
-    fn find_tool_in_path(&self, tool_name: &str) -> Option<PathBuf> {
-        which(tool_name).ok()
+    fn find_tool_in_path(&self, binary_names: &[String]) -> Option<PathBuf> {
+        for binary_name in binary_names {
+            info!("Checking for binary '{}' in PATH using 'which'", binary_name);
+            if let Ok(path) = which(binary_name) {
+                info!("Found binary '{}' at: {}", binary_name, path.display());
+                return Some(path);
+            } else {
+                info!("Binary '{}' not found in PATH", binary_name);
+            }
+        }
+        None
     }
     
     async fn scan_directory(&self, dir: PathBuf) -> Result<Vec<ToolEntry>> {
@@ -276,12 +328,16 @@ impl ToolManager {
         
         // Check if it's a GitHub URL
         if self.is_github_url(&name_or_url) {
+            info!("Detected GitHub URL, using GitHub installation path");
             self.install_from_github_url(name_or_url, path, force, branch).await
         } else {
+            info!("Not a GitHub URL, checking known tools for: {}", name_or_url);
             // Try known tools first
             if let Some(template) = self.known_tools.get(&name_or_url).cloned() {
+                info!("Found known tool template for: {}", name_or_url);
                 self.install_known_tool(template, path, force, branch).await
             } else {
+                info!("Tool not found in known tools: {}", name_or_url);
                 Err(HylaeanError::ToolNotFound { name: name_or_url })
             }
         }
@@ -320,9 +376,21 @@ impl ToolManager {
     
     // Install known tool using template
     async fn install_known_tool(&self, template: ToolTemplate, path: Option<String>, _force: bool, _branch: Option<String>) -> Result<()> {
+        info!("Installing known tool: {} using method: {:?}", template.name, template.installation_method);
+        
         match template.installation_method {
             InstallationMethod::GitClone => {
-                self.install_via_git(&template, path).await
+                info!("Using git clone installation method");
+                // Clone the repository first
+                self.install_via_git(&template, path.clone()).await?;
+                
+                // Special handling for brush_app - build it after cloning
+                if template.name == "Brush" {
+                    info!("Building and installing Brush after clone");
+                    self.build_and_install_brush(&template, path).await?;
+                }
+                
+                Ok(())
             }
             InstallationMethod::Binary => {
                 // For binary tools, we assume they're already installed or need manual installation
@@ -341,22 +409,123 @@ impl ToolManager {
         let install_path = if let Some(p) = path {
             PathBuf::from(p)
         } else {
-            PathBuf::from("./tools").join(&template.name)
+            // For brush_app, use a specific path since the repo name is "brush"
+            if template.name == "Brush" {
+                PathBuf::from("./tools")
+            } else {
+                PathBuf::from("./tools").join(&template.name)
+            }
         };
         
-        info!("Cloning {} to {}", template.repository_url, install_path.display());
+        info!("Checking for existing installation at {}", install_path.display());
         
-        let output = Command::new("git")
-            .args(&["clone", &template.repository_url, &install_path.to_string_lossy()])
-            .output()?;
-        
-        if !output.status.success() {
-            return Err(HylaeanError::InstallationFailed {
-                tool: template.name.clone(),
-            });
+        // Check if directory already exists
+        if install_path.exists() {
+            info!("Directory {} already exists", install_path.display());
+            // If it's already a git repo, try to update it
+            if install_path.join(".git").exists() {
+                info!("Found git repository, updating instead of cloning");
+                
+                let output = Command::new("git")
+                    .args(&["pull"])
+                    .current_dir(&install_path)
+                    .output()?;
+                
+                if !output.status.success() {
+                    warn!("Git pull failed, but continuing with existing repository");
+                }
+            } else {
+                info!("Directory exists but is not a git repo, skipping clone");
+            }
+        } else {
+            info!("Cloning {} to {}", template.repository_url, install_path.display());
+            
+            let output = Command::new("git")
+                .args(&["clone", &template.repository_url, &install_path.to_string_lossy()])
+                .output()?;
+            
+            if !output.status.success() {
+                let error_msg = String::from_utf8_lossy(&output.stderr);
+                return Err(HylaeanError::InstallationFailed {
+                    tool: format!("{} (clone failed: {})", template.name, error_msg),
+                });
+            }
         }
         
         info!("Successfully installed {}", template.name);
+        Ok(())
+    }
+    
+    async fn build_and_install_brush(&self, template: &ToolTemplate, path: Option<String>) -> Result<()> {
+        let install_path = if let Some(p) = path {
+            PathBuf::from(p)
+        } else {
+            // For brush_app, use the tools directory directly since the repo is cloned there
+            PathBuf::from("./tools")
+        };
+        
+        info!("Building Brush from source at {}...", install_path.display());
+        
+        // Check if Rust/Cargo is available
+        if which("cargo").is_err() {
+            return Err(HylaeanError::ToolNotFound {
+                name: "cargo".to_string(),
+            });
+        }
+        
+        // Build the project in release mode
+        let build_output = Command::new("cargo")
+            .args(&["build", "--release"])
+            .current_dir(&install_path)
+            .output()?;
+        
+        if !build_output.status.success() {
+            let error_msg = String::from_utf8_lossy(&build_output.stderr);
+            return Err(HylaeanError::InstallationFailed {
+                tool: format!("{} (build failed: {})", template.name, error_msg),
+            });
+        }
+        
+        info!("Brush build completed successfully");
+        
+        // Try to install the binary to ~/.cargo/bin or local PATH
+        let binary_path = install_path.join("target/release/brush_app");
+        if binary_path.exists() {
+            // Check if we can install to ~/.cargo/bin
+            if let Some(home_dir) = dirs::home_dir() {
+                let cargo_bin = home_dir.join(".cargo/bin");
+                if cargo_bin.exists() {
+                    let dest_path = cargo_bin.join("brush");
+                    
+                    info!("Installing brush binary to {}", dest_path.display());
+                    
+                    // Copy the binary
+                    std::fs::copy(&binary_path, &dest_path)
+                        .map_err(|e| HylaeanError::IoError(e.into()))?;
+                    
+                    // Make it executable on Unix-like systems
+                    #[cfg(unix)]
+                    {
+                        use std::os::unix::fs::PermissionsExt;
+                        let mut perms = std::fs::metadata(&dest_path)
+                            .map_err(|e| HylaeanError::IoError(e.into()))?
+                            .permissions();
+                        perms.set_mode(0o755);
+                        std::fs::set_permissions(&dest_path, perms)
+                            .map_err(|e| HylaeanError::IoError(e.into()))?;
+                    }
+                    
+                    info!("Brush binary installed successfully to {}", dest_path.display());
+                } else {
+                    warn!("~/.cargo/bin not found, brush binary available at {}", binary_path.display());
+                }
+            } else {
+                warn!("Home directory not found, brush binary available at {}", binary_path.display());
+            }
+        } else {
+            warn!("Built binary not found at expected location: {}", binary_path.display());
+        }
+        
         Ok(())
     }
     

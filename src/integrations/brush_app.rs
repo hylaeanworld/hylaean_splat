@@ -14,15 +14,7 @@ pub struct BrushApp {
 impl BrushApp {
     pub fn new() -> Self {
         let install_path = Self::find_installation();
-        let executable_path = which("brush").ok()
-            .or_else(|| install_path.as_ref().and_then(|p| {
-                let target_path = p.join("target/release/brush");
-                if target_path.exists() {
-                    Some(target_path)
-                } else {
-                    None
-                }
-            }));
+        let executable_path = Self::find_executable(&install_path);
         
         Self {
             install_path,
@@ -30,20 +22,60 @@ impl BrushApp {
         }
     }
     
+    fn find_executable(install_path: &Option<PathBuf>) -> Option<PathBuf> {
+        // Try to find brush binary in this order:
+        // 1. System PATH (installed via cargo install or our installer)
+        if let Ok(path) = which("brush") {
+            return Some(path);
+        }
+        
+        // 2. ~/.cargo/bin/brush (our install location)
+        if let Some(home_dir) = dirs::home_dir() {
+            let cargo_bin_brush = home_dir.join(".cargo/bin/brush");
+            if cargo_bin_brush.exists() {
+                return Some(cargo_bin_brush);
+            }
+        }
+        
+        // 3. In the target/release directory of the installation
+        if let Some(install_path) = install_path {
+            let target_brush = install_path.join("target/release/brush");
+            if target_brush.exists() {
+                return Some(target_brush);
+            }
+            
+            // 4. Try brush_app binary name as well
+            let target_brush_app = install_path.join("target/release/brush_app");
+            if target_brush_app.exists() {
+                return Some(target_brush_app);
+            }
+        }
+        
+        None
+    }
+    
     fn find_installation() -> Option<PathBuf> {
         // Common installation locations
         let possible_paths = vec![
+            // Our tool manager installs to ./tools directly (the repo is named "brush")
+            PathBuf::from("./tools"),
+            // Legacy location - our tool manager used to install to ./tools/Brush
+            PathBuf::from("./tools/Brush"),
+            // Standard locations
             PathBuf::from("./brush"),
             PathBuf::from("../brush"),
             dirs::home_dir()?.join("brush"),
+            // Legacy location
             PathBuf::from("./tools/brush"),
         ];
         
         for path in possible_paths {
             if path.exists() && path.join("Cargo.toml").exists() {
-                // Check if it's actually the Brush project
+                // Check if it's actually the Brush project by looking for brush-specific content
                 if let Ok(content) = std::fs::read_to_string(path.join("Cargo.toml")) {
-                    if content.contains("brush") && content.contains("gaussian") {
+                    // Look for brush-specific workspace members or packages
+                    if content.contains("brush-app") || content.contains("brush-render") ||
+                       (content.contains("brush") && (content.contains("gaussian") || content.contains("splat"))) {
                         return Some(path);
                     }
                 }

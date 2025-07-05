@@ -42,8 +42,8 @@ Hylaean Splat is a unified interface and management system for various 3D Gaussi
 
 ### Build from Source
 ```bash
-git clone https://github.com/kyjohnso/hylaeansplat_splat.git
-cd hylaeansplat_splat
+git clone https://github.com/hylaeanworld/hylaean_splat.git
+cd hylaean_splat
 cargo build --release
 ```
 

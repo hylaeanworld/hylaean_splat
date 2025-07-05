@@ -98,3 +98,6 @@ perf.data*
 tarpaulin-report.html
 cobertura.xml
 lcov.info
+
+# Data Paths
+testing/outputs
